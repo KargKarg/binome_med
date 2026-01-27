@@ -93,7 +93,7 @@ def auto_regressive_pred(model, X, h) -> np.ndarray[float]:
     Xc: np.ndarray[float] = X.copy()
     pred: list[np.ndarray[float]] = []
 
-    for t in tqdm(range(X.shape[0])):
+    for t in range(X.shape[0]):
         
         pred_t: np.ndarray[float] = model.predict(
             np.concatenate([Xc[t][None, ...], last], axis=2)
@@ -106,31 +106,61 @@ def auto_regressive_pred(model, X, h) -> np.ndarray[float]:
     return np.array(pred)
 
 
-def plot_pred_true(Y_true, Y_pred) -> None:
+def plot_pred_true(Y_true, Y_pred, ax=None) -> None:
     """
     """
+    if ax is None:  _, ax = plt.subplots()
+
     t = np.arange(Y_true.shape[0])
 
-    plt.figure()
-    plt.plot(t, Y_true,
-            label="Y vraie",
-            linewidth=2,
-            alpha=0.8)
+    ax.plot(t, Y_true, label="Y vraie", linewidth=2, alpha=0.8)
 
-    plt.plot(t, Y_pred,
-            label="Y prédite",
-            linestyle="--",
-            linewidth=2,
-            alpha=0.8)
+    ax.plot(t, Y_pred, label="Y prédite", linestyle="--", linewidth=2, alpha=0.8)
 
-    plt.xlabel("Temps t")
-    plt.ylabel("Valeur")
-    plt.legend()
+    ax.set_xlabel("Temps t")
+    ax.set_xlabel("Valeur")
+    ax.legend()
+
+    return ax
+
+
+def plot_metrics_bar(RESULTS: dict, split: str = "TEST", title: str | None = None):
+    models = list(RESULTS.keys())
+    metrics = list(next(iter(RESULTS.values()))[split].keys())
+
+    n_models = len(models)
+    n_metrics = len(metrics)
+
+    fig, axes = plt.subplots(
+        1, n_metrics, 
+        figsize=(4 * n_metrics, 5), 
+        sharey=False
+    )
+
+    if n_metrics == 1:
+        axes = [axes]  # sécurité si une seule métrique
+
+    x = np.arange(n_models)
+    width = 0.6
+
+    for ax, metric in zip(axes, metrics):
+        values = [RESULTS[model][split][metric] for model in models]
+
+        ax.bar(x, values, width)
+        ax.set_xticks(x)
+        ax.set_xticklabels(models, rotation=45, ha="right")
+        ax.set_title(metric)
+        ax.grid(axis="y", alpha=0.3)
+
+    axes[0].set_ylabel("Valeur de la métrique")
+
+    if title is not None:
+        fig.suptitle(title, fontsize=14)
+
+    plt.tight_layout()
     plt.show()
-    plt.close()
 
     return None
-
 
 class MedianImputer3D(BaseEstimator, TransformerMixin):
     """
